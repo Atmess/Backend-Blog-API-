@@ -88,4 +88,54 @@ const registerpost = async (req,res,next)=>{
     }
 }
 
-module.exports= {login,registerpost}
+const PublishPost = async (req,res,next) => {
+      try{
+        const userId = parseInt(req.user.id)
+        await prisma.post.create({
+          data:{
+            title,
+            content,
+            authorId:userId,
+            published:true
+
+          }
+        })
+      }catch(error){
+        console.error(error)
+        next(error)
+      }
+}
+
+const saveDraft = async (req,res,next) => {
+
+  try{
+    const UserId = parseInt(req.user.id)
+    await prisma.post.create({
+      data:{
+        title,
+        content,
+        authorId:UserId,
+        published:false
+      }
+    })
+  }catch(error){
+    console.error(error)
+    next()
+    }
+}
+
+const PublishDraft = async (req,res,next) => {
+  try{
+  const postId = parseInt(req.params.id)
+  await prisma.post.update({
+    where:{id:postId},
+    data:{
+      published:true
+    }
+  })
+  }catch(error){
+    console.error(error)
+    next()
+  }
+}
+module.exports= {login,registerpost,saveDraft,PublishDraft,PublishPost}
