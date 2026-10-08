@@ -88,16 +88,16 @@ const registerpost = async (req,res,next)=>{
     }
 }
 
-const PublishPost = async (req,res,next) => {
+const CreatePost = async (req,res,next) => {
       try{
+         const {title , content ,published}= req.body
         const userId = parseInt(req.user.id)
         await prisma.post.create({
           data:{
             title,
             content,
             authorId:userId,
-            published:true
-
+            published:Boolean(published)
           }
         })
       }catch(error){
@@ -106,36 +106,35 @@ const PublishPost = async (req,res,next) => {
       }
 }
 
-const saveDraft = async (req,res,next) => {
-
-  try{
-    const UserId = parseInt(req.user.id)
-    await prisma.post.create({
-      data:{
-        title,
-        content,
-        authorId:UserId,
-        published:false
-      }
-    })
-  }catch(error){
-    console.error(error)
-    next()
-    }
-}
-
 const PublishDraft = async (req,res,next) => {
+  const {title , content ,publishedTime}= req.body
+  const postId = parseInt(req.params.id ,10)
+
+  const existingPost = await prisma.post.findUnique({
+    where:{id:postId}
+  })
+  if(!existingPost){
+    return res.status(404).json({message:"Draft Not found"})
+  }
+  if(existingPost.authorId !== req.user.id){
+      return res.status(403).json({ message: 'Forbidden: You do not own this post.' });
+    }
   try{
-  const postId = parseInt(req.params.id)
+  const shcedule = Boolean(publishedTime)
+  const publishnow = !shcedule
+const publishDate = shcedule? new Date(publishedTime):new Date() 
   await prisma.post.update({
     where:{id:postId},
     data:{
-      published:true
+     ...(title !== undefined && { title }),
+        ...(content !== undefined && { content }),
+      published:publishnow,
+      publishedAt:publishDate
     }
   })
   }catch(error){
     console.error(error)
-    next()
+    next(error)
   }
 }
-module.exports= {login,registerpost,saveDraft,PublishDraft,PublishPost}
+module.exports= {login,registerpost,PublishDraft,CreatePost}

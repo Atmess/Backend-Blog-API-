@@ -15,8 +15,7 @@ router.get('/posts', (req, res) => {
 // 3. Defined as '/login'
 router.post('/login', controller.login);
 router.post('/register',controller.registerpost)
-router.post('/post/publish',controller.PublishPost)
-router.post('/post/draft',controller.saveDraft)
-router.post('/post/:id/publishdraft',controller.PublishDraft)
+router.post('/post/publish',controller.CreatePost)
+router.patch('/post/:id/publishdraft',controller.PublishDraft)
 
 module.exports = router;
