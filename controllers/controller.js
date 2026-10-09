@@ -89,17 +89,18 @@ const registerpost = async (req,res,next)=>{
 }
 
 const CreatePost = async (req,res,next) => {
-      try{
-         const {title , content ,published}= req.body
-        const userId = parseInt(req.user.id)
-        await prisma.post.create({
-          data:{
-            title,
-            content,
-            authorId:userId,
-            published:Boolean(published)
-          }
-        })
+        const {title , content ,published}= req.body
+      try{ 
+         await prisma.Post.create({
+                data:{
+                  title,
+                  content,
+                  published:Boolean(published),
+                  authorId:req.user.userId
+                }
+              })
+        res.status(200).json({message: 'Draft published successfully!'
+      })
       }catch(error){
         console.error(error)
         next(error)
@@ -107,8 +108,9 @@ const CreatePost = async (req,res,next) => {
 }
 
 const PublishDraft = async (req,res,next) => {
-  const {title , content ,publishedTime}= req.body
+  const userId = parseInt(req.user.userId,10)
   const postId = parseInt(req.params.id ,10)
+  const { title, content, publishedTime } = req.body || {};
 
   const existingPost = await prisma.post.findUnique({
     where:{id:postId}
@@ -116,25 +118,100 @@ const PublishDraft = async (req,res,next) => {
   if(!existingPost){
     return res.status(404).json({message:"Draft Not found"})
   }
-  if(existingPost.authorId !== req.user.id){
+  if(existingPost.authorId !== userId){
       return res.status(403).json({ message: 'Forbidden: You do not own this post.' });
     }
   try{
   const shcedule = Boolean(publishedTime)
   const publishnow = !shcedule
-const publishDate = shcedule? new Date(publishedTime):new Date() 
-  await prisma.post.update({
+  const publishDate = shcedule? new Date(publishedTime):new Date() 
+  const updatedPost = await prisma.post.update({
     where:{id:postId},
     data:{
-     ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
+    ...(title && { title }),     // Only updates title if sent in body
+        ...(content && { content }),
       published:publishnow,
       publishedAt:publishDate
     }
   })
+  res.status(200).json({message: 'Draft published successfully!',
+      post: updatedPost,})
   }catch(error){
     console.error(error)
     next(error)
   }
 }
-module.exports= {login,registerpost,PublishDraft,CreatePost}
+
+const getdraft = async (req,res,next) => {
+  try{    
+      const draft = await prisma.post.findMany({
+        where:{authorId:req.user.id, 
+           published:false},
+        orderBy:{updatedAt:'desc'}
+      })
+      res.status(200).json(draft)
+    }catch(error){
+      console.error(error)
+      next(error)
+    }
+}
+
+const getPublish = async (req,res,next) => {
+  try{    
+      const draft = await prisma.post.findMany({
+        where:{authorId:req.user.id, 
+           published:true},
+        orderBy:{updatedAt:'desc'}
+      })
+      res.status(200).json(draft)
+    }catch(error){
+      console.error(error)
+      next(error)
+    }
+}
+const deletePost = async (req, res, next) => {
+  try {
+    const PostId = parseInt(req.params.id, 10);
+
+    // Extract user ID safely from decoded JWT payload
+    const userId = parseInt(req.user.id || req.user.userId, 10);
+
+    const Posts = await prisma.post.findUnique({
+      where: { id: PostId }
+    });
+    
+    if (!Posts) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Check ownership OR admin privileges
+    const isAuthor = Posts.authorId === userId;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({ message: 'Forbidden: Unauthorized to delete this post' });
+    }
+
+    await prisma.post.delete({
+      where: { id: PostId }
+    });
+
+    return res.status(200).json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Error in deletePost:', error);
+    next(error);
+  }
+};
+
+const testing = async(req,res)=>{
+ const user = req.user
+ const params = req.params
+ const body = req.body
+ console.log (user)
+ console.log(body)
+ console.log(params)
+
+  res.json(user && params && body)
+
+}
+module.exports= {login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,testing}
