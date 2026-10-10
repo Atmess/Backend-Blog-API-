@@ -110,8 +110,7 @@ const CreatePost = async (req,res,next) => {
 const PublishDraft = async (req,res,next) => {
   const userId = parseInt(req.user.userId,10)
   const postId = parseInt(req.params.id ,10)
-  const { title, content, publishedTime } = req.body || {};
-
+const { title, content, publishTime } = req.body || {};
   const existingPost = await prisma.post.findUnique({
     where:{id:postId}
   })
@@ -122,16 +121,16 @@ const PublishDraft = async (req,res,next) => {
       return res.status(403).json({ message: 'Forbidden: You do not own this post.' });
     }
   try{
-  const shcedule = Boolean(publishedTime)
+  const shcedule = Boolean(publishTime)
   const publishnow = !shcedule
-  const publishDate = shcedule? new Date(publishedTime):new Date() 
+  const publishDate = shcedule? new Date(publishTime):new Date() 
   const updatedPost = await prisma.post.update({
     where:{id:postId},
     data:{
-    ...(title && { title }),     // Only updates title if sent in body
+    ...(title && { title }),
         ...(content && { content }),
-      published:publishnow,
-      publishedAt:publishDate
+        published:publishnow,
+        publishedAt: publishDate,
     }
   })
   res.status(200).json({message: 'Draft published successfully!',
@@ -145,8 +144,16 @@ const PublishDraft = async (req,res,next) => {
 const getdraft = async (req,res,next) => {
   try{    
       const draft = await prisma.post.findMany({
-        where:{authorId:req.user.id, 
-           published:false},
+        where:{authorId:req.user.userId, 
+           published:false,
+          OR: [
+          { publishedAt: null },
+          {
+            publishedAt: {
+              gt: new Date(), // Future scheduled posts belong in Drafts
+            },
+          },
+        ], },
         orderBy:{updatedAt:'desc'}
       })
       res.status(200).json(draft)
@@ -159,8 +166,17 @@ const getdraft = async (req,res,next) => {
 const getPublish = async (req,res,next) => {
   try{    
       const draft = await prisma.post.findMany({
-        where:{authorId:req.user.id, 
-           published:true},
+        where:{authorId:req.user.userId, 
+          
+          OR: [
+          { published: true },
+          {
+            publishedAt: {
+              lte: new Date(), // Future scheduled posts belong in Drafts
+            },
+          },
+        ],
+          },
         orderBy:{updatedAt:'desc'}
       })
       res.status(200).json(draft)
@@ -168,6 +184,46 @@ const getPublish = async (req,res,next) => {
       console.error(error)
       next(error)
     }
+}
+
+const getallPublish = async (req, res, next) => {
+  try {
+    const posts = await prisma.post.findMany({
+      where: {
+        OR: [
+          { published: true },
+          {
+            publishedAt: {
+              lte: new Date(), // 👈 Fixed: Explicitly checks publishedAt column
+            },
+          },
+        ],
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        author: {
+          select: { username: true },
+        },
+      },
+    });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
+const getPostContent = async (req,res,next)=>{
+  try{
+    const postId  = parseInt(req.params.id,10)
+    const Posts = await prisma.post.findUnique({
+      where:{id:postId}
+    })
+    res.json(Posts)
+  }catch(error){
+    console.error(error)
+    next(error)
+  }
 }
 const deletePost = async (req, res, next) => {
   try {
@@ -210,8 +266,17 @@ const testing = async(req,res)=>{
  console.log (user)
  console.log(body)
  console.log(params)
-
-  res.json(user && params && body)
+ try {
+    // 👈 Use findMany instead of findUnique for searching collections
+    const postss = await prisma.Post.findMany()
+    console.log(postss)
+res.json(postss)
+ }catch(err){
+  console.error(err)
+  next(err)
+ }
 
 }
-module.exports= {login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,testing}
+module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,
+                  testing,getPostContent,getallPublish
+}

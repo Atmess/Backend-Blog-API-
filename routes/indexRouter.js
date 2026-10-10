@@ -38,6 +38,7 @@ router.use(authenticateToken)
 // 2. Defined as '/posts'
 router.get('/post/draft', controller.getdraft );
 router.get('/post/published',controller.getPublish)
+router.get('/post/getAllPublish',controller.getallPublish)
 router.post('/post/publish',controller.CreatePost)
 router.patch('/post/:id/publishdraft',controller.PublishDraft)
 router.delete('/post/:id',controller.deletePost)
