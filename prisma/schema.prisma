@@ -87,16 +87,16 @@ model File {
   uploadTime DateTime @default(now())
 
   // Links the file to its owner
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     Int
 
   // Links the file to a specific folder (Optional, in case files are in a "root" directory)
-  folder     Folder?  @relation(fields: [folderId], references: [id])
+  folder     Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
   folderId   Int?
 
   //link to post 
-  posts     Post?   @relation(fields:[postId],references:[id])
-  postId    Int
+  posts     Post?   @relation(fields:[postId],references:[id], onDelete: Cascade)
+  postId    Int?
 }
 
 

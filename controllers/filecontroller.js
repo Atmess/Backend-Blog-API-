@@ -206,13 +206,11 @@ const deletefilePost = async (req, res) => {
 
 // Delete Folder
 const deletefolderPost = async (req, res) => {
-  if (!req.user) return res.redirect("/log-in");
-
   try {
     const folderId = Number(req.params.id);
     const userId = Number(req.user.id);
 
-    const folder = await prisma.folder.findUnique({
+    const folder = await prisma.post.findUnique({
       where: { id: folderId },
     });
 
@@ -245,8 +243,7 @@ const deletefolderPost = async (req, res) => {
     await prisma.folder.delete({
       where: { id: folderId },
     });
-
-    res.redirect("/");
+    
   } catch (error) {
     console.error("Delete Folder Error:", error);
     res.status(500).send("Error deleting folder");

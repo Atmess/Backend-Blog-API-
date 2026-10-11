@@ -1,15 +1,14 @@
 const { validationResult } = require("express-validator");
 const prisma = require("../lib/prisma.js")
 const bcrypt = require('bcryptjs')
-const jwt =require('jsonwebtoken')
+const jwt =require('jsonwebtoken');
+const { createClient } = require("@supabase/supabase-js");
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY; // Ensure this matches your Render key name
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 
 // Helper: Sanitize Filenames
-function sanitizeFilename(filename) {
-  return filename
-    .replace(/[^a-zA-Z0-9.-]/g, "_")
-    .replace(/_{2,}/g, "_");
-}
-
 
 const login = async (req , res ,next)=>{
     try{
@@ -268,10 +267,11 @@ const deletePost = async (req, res, next) => {
     const PostId = parseInt(req.params.id, 10);
 
     // Extract user ID safely from decoded JWT payload
-    const userId = parseInt(req.user.id || req.user.userId, 10);
+    const userId = parseInt( req.user.userId, 10);
 
     const Posts = await prisma.post.findUnique({
-      where: { id: PostId }
+      where: { id: PostId },
+      include: { files: true },
     });
     
     if (!Posts) {
@@ -286,6 +286,20 @@ const deletePost = async (req, res, next) => {
       return res.status(403).json({ message: 'Forbidden: Unauthorized to delete this post' });
     }
 
+     // 2. Delete physical files from Supabase Storage if any are attached
+    if (Posts.files && Posts.files.length > 0) {
+      const fileNames = Posts.files.map((file) =>
+        decodeURIComponent(file.url.split("/").pop())
+      );
+
+      const { error: storageError } = await supabase.storage
+        .from("Blog_API") // 👈 Ensure matches your Supabase bucket name
+        .remove(fileNames);
+
+      if (storageError) {
+        console.error("Supabase storage deletion error:", storageError);
+      }
+    }
     await prisma.post.delete({
       where: { id: PostId }
     });

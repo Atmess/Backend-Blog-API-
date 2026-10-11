@@ -94,7 +94,7 @@ router.get('/post/draft', controller.getdraft );
 router.get('/post/published',controller.getPublish)
 router.get('/post/getAllPublish',controller.getallPublish)
 router.post('/post/publish',FilterFile, filecontroller.uploadfile, controller.CreatePost)
-router.patch('/post/:id/publishdraft',controller.testing)
+router.patch('/post/:id/publishdraft',controller.PublishDraft)
 router.delete('/post/:id',controller.deletePost)
 /*
 // File Operations
