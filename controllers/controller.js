@@ -3,6 +3,13 @@ const prisma = require("../lib/prisma.js")
 const bcrypt = require('bcryptjs')
 const jwt =require('jsonwebtoken')
 
+// Helper: Sanitize Filenames
+function sanitizeFilename(filename) {
+  return filename
+    .replace(/[^a-zA-Z0-9.-]/g, "_")
+    .replace(/_{2,}/g, "_");
+}
+
 
 const login = async (req , res ,next)=>{
     try{
@@ -89,17 +96,41 @@ const registerpost = async (req,res,next)=>{
 }
 
 const CreatePost = async (req,res,next) => {
-        const {title , content ,published}= req.body
       try{ 
-         await prisma.Post.create({
-                data:{
-                  title,
-                  content,
-                  published:Boolean(published),
-                  authorId:req.user.userId
-                }
-              })
-        res.status(200).json({message: 'Draft published successfully!'
+        const userId = parseInt(req.user.userId)
+        const {title , content ,published }= req.body
+        const fileData = req.savedFileData;
+      const result = await prisma.$transaction(async (prisma) => {
+      // 1. Create the blog post
+      const newPost = await prisma.post.create({
+        data: {
+          title,
+          content,
+          published: published === 'true' || published === true,
+          authorId: userId,
+        },
+      });
+
+      // 2. Create the file record if a file was uploaded
+      let newFile = null;
+      if (fileData) {
+        newFile = await prisma.file.create({
+          data: {
+            name: fileData.name,
+            size: fileData.size,
+            url: fileData.url,
+            userId: userId,
+            postId: newPost.id,
+            // If folderId was sent in req.body, parse it to an int. Otherwise, it stays null/undefined.
+          },
+        });
+      }
+
+      return { newPost, newFile };
+    });
+        res.status(200).json({message: 'Draft published successfully!',
+          post: result.newPost,
+          file: result.newFile,
       })
       }catch(error){
         console.error(error)
@@ -263,18 +294,13 @@ const testing = async(req,res)=>{
  const user = req.user
  const params = req.params
  const body = req.body
+ const fileData = req.savedFileData;
  console.log (user)
  console.log(body)
  console.log(params)
- try {
-    // 👈 Use findMany instead of findUnique for searching collections
-    const postss = await prisma.Post.findMany()
-    console.log(postss)
-res.json(postss)
- }catch(err){
-  console.error(err)
-  next(err)
- }
+ console.log(fileData)
+res.json(user && body && params && fileData)
+
 
 }
 module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,
