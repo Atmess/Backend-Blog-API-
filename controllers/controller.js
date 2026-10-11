@@ -121,13 +121,13 @@ const CreatePost = async (req,res,next) => {
             url: fileData.url,
             userId: userId,
             postId: newPost.id,
-            // If folderId was sent in req.body, parse it to an int. Otherwise, it stays null/undefined.
           },
         });
       }
 
       return { newPost, newFile };
     });
+    console.log(result)
         res.status(200).json({message: 'Draft published successfully!',
           post: result.newPost,
           file: result.newFile,
@@ -185,7 +185,10 @@ const getdraft = async (req,res,next) => {
             },
           },
         ], },
-        orderBy:{updatedAt:'desc'}
+        orderBy:{updatedAt:'desc'},
+        include:{
+          files:true
+        }
       })
       res.status(200).json(draft)
     }catch(error){
@@ -208,7 +211,10 @@ const getPublish = async (req,res,next) => {
           },
         ],
           },
-        orderBy:{updatedAt:'desc'}
+        orderBy:{updatedAt:'desc'},
+        include:{
+          files:true
+        }
       })
       res.status(200).json(draft)
     }catch(error){
@@ -232,6 +238,7 @@ const getallPublish = async (req, res, next) => {
       },
       orderBy: { updatedAt: 'desc' },
       include: {
+        files:true,
         author: {
           select: { username: true },
         },
