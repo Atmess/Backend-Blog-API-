@@ -22,32 +22,6 @@ function sanitizeFilename(filename) {
     .replace(/_{2,}/g, "_");
 }
 
-// User Registration
-const createUserPost = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.render("register", { errors: errors.array(),formData: req.body });
-  }
-
-  try {
-    const { email, username, password } = req.body;
-    const hashpassw = await bcrypt.hash(password, 10);
-
-    await prisma.user.create({
-      data: {
-        email,
-        username,
-        password: hashpassw,
-      },
-    });
-
-    res.redirect("/log-in");
-  } catch (error) {
-    console.error("Registration Error:", error);
-    res.status(400).send("Error registering User");
-  }
-};
-
 // File Upload
 const uploadfile = async (req, res,next) => {
   try {
@@ -476,8 +450,20 @@ const shareLinkResultGet = async (req, res) => {
   }
 };
 
+const testing = async(req,res)=>{
+ const user = req.user
+ const params = req.params
+ const body = req.body
+ const fileData = req.file;
+ console.log (user)
+ console.log(body)
+ console.log(params)
+ console.log(fileData)
+res.json({message:'test test'})
+
+
+}
 module.exports = {
-  createUserPost,
   uploadfile,
   dashboard,
   createFolderPost,
@@ -491,4 +477,5 @@ module.exports = {
   downloadFileGet,
   shareLinkPost,
   shareLinkResultGet,
+  testing
 };

@@ -3,6 +3,7 @@ const prisma = require("../lib/prisma.js")
 const bcrypt = require('bcryptjs')
 const jwt =require('jsonwebtoken');
 const { createClient } = require("@supabase/supabase-js");
+const { uploadfile } = require("./filecontroller.js");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY; // Ensure this matches your Render key name
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -30,7 +31,7 @@ const login = async (req , res ,next)=>{
       return res.status(401).json({ message: "Invalid username/email or password." });
     }
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id, role: user.role , name:user.name , avatarUrl:user.avatarUrl },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -43,7 +44,9 @@ const login = async (req , res ,next)=>{
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        name:user.name ,
+        avatarUrl:user.avatarUrl
       }
     });
 
@@ -98,7 +101,7 @@ const CreatePost = async (req,res,next) => {
       try{ 
         const userId = parseInt(req.user.userId)
         const {title , content ,published }= req.body
-        const fileData = req.savedFileData;
+        const fileData = req.savedFileData; // Whatever your storage middleware populates
       const result = await prisma.$transaction(async (prisma) => {
       // 1. Create the blog post
       const newPost = await prisma.post.create({
@@ -137,6 +140,62 @@ const CreatePost = async (req,res,next) => {
       }
 }
 
+const UpdateUser = async (req, res, next) => {
+    try {
+        const userId = parseInt(req.user.userId, 10);
+        const { name, username } = req.body;
+        const fileData = req.savedFileData; // Whatever your storage middleware populates
+      
+        
+        // 1. Fetch current user to get existing avatarUrl if no new file is uploaded
+        const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!currentUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        let newAvatarUrl = currentUser.avatarUrl;
+
+        // 2. If a new file was uploaded, save or extract its URL
+        if (fileData) {
+            // Option A: If your storage middleware already gives you a public URL string:
+            newAvatarUrl = fileData.url;
+          
+            // Option B: If you want to log it to your `File` table in Prisma:
+             await prisma.file.create({
+            data: {
+            name: fileData.name,
+            size: fileData.size,
+            url: fileData.url,
+            user:{connect:{id:userId}}
+          },
+        });
+        }
+
+        // 3. Update the user record
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: name !== undefined ? name : currentUser.name,
+                username: username !== undefined ? username : currentUser.username,
+                avatarUrl: newAvatarUrl,
+            },
+        });
+
+        // 4. Send back the updated user (exclude password for safety!)
+        const { password, ...userWithoutPassword } = updatedUser;
+        res.status(200).json(userWithoutPassword);
+
+    } catch (error) {
+        console.error('Error updating user:', error);
+        if (error.code === 'P2002') {
+            return res.status(400).json({ message: 'Username is already taken.' });
+        }
+        next(error);
+    }
+};
 const PublishDraft = async (req,res,next) => {
   const userId = parseInt(req.user.userId,10)
   const postId = parseInt(req.params.id ,10)
@@ -346,7 +405,7 @@ const testing = async(req,res)=>{
  const user = req.user
  const params = req.params
  const body = req.body
- const fileData = req.savedFileData;
+ const fileData = req.req?.savedFileData || req.savedFileData; // Whatever your storage middleware populates
  console.log (user)
  console.log(body)
  console.log(params)
@@ -356,5 +415,5 @@ res.json({message:'test test'})
 
 }
 module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,
-                  testing,getPostContent,getallPublish,SinglePost
+                  testing,getPostContent,getallPublish,SinglePost,UpdateUser
 }

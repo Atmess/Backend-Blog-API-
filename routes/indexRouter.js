@@ -51,11 +51,11 @@ const FilterFile = (req, res, next) => {
   upload.single("upload")(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).send("File size too large! Maximum limit is 50 MB.");
+        return res.status(400).json({ message: "File size too large! Maximum limit is 50 MB." }); // 👈 Changed to .json()
       }
-      return res.status(400).send(`Upload error: ${err.message}`);
+      return res.status(400).json({ message: `Upload error: ${err.message}` }); // 👈 Changed to .json()
     } else if (err) {
-      return res.status(400).send(err.message);
+      return res.status(400).json({ message: err.message }); // 👈 Changed to .json()
     }
     next();
   });
@@ -89,13 +89,14 @@ router.get('/', (req, res) => {
 router.post('/login', controller.login);
 router.post('/register',controller.registerpost)
 router.get('/posts/:id',controller.SinglePost)
+router.get('/post/getAllPublish',controller.getallPublish)
 
 router.use(authenticateToken)
 
 // 2. Defined as '/posts'
 router.get('/post/draft', controller.getdraft );
 router.get('/post/published',controller.getPublish)
-router.get('/post/getAllPublish',controller.getallPublish)
+
 router.post('/post/publish',FilterFile, filecontroller.uploadfile, controller.CreatePost)
 router.patch('/post/:id/publishdraft',controller.PublishDraft)
 router.delete('/post/:id',controller.deletePost)
@@ -104,6 +105,9 @@ router.delete('/post/:id',controller.deletePost)
 router.post('/post/:id/comments', comentController.createComment)
 router.delete('/comments/:id',commentController.deleteComment)
 router.patch('/comments/:id',commentController.editComment)
+
+//User Section
+router.patch('/users/profile',FilterFile,filecontroller.uploadfile , controller.UpdateUser)
 
 // File Operations (Clean REST Style)
 router.get("/file/:id", filecontroller.fileinfoGet);              // Get file metadata
