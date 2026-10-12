@@ -3,10 +3,12 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/controller')
 const filecontroller = require('../controllers/filecontroller')
+const comentController = require('../controllers/commentController')
 const jwt = require('jsonwebtoken')
 const JWT_SECRET = process.env.JWT_SECRET
 const multer = require('multer')
-const path = require('path')
+const path = require('path');
+const commentController = require('../controllers/commentController');
 
 // Define allowed MIME types
 const ALLOWED_MIME_TYPES = [
@@ -86,6 +88,7 @@ router.get('/', (req, res) => {
 // 3. Defined as '/login'
 router.post('/login', controller.login);
 router.post('/register',controller.registerpost)
+router.get('/posts/:id',controller.SinglePost)
 
 router.use(authenticateToken)
 
@@ -96,17 +99,11 @@ router.get('/post/getAllPublish',controller.getallPublish)
 router.post('/post/publish',FilterFile, filecontroller.uploadfile, controller.CreatePost)
 router.patch('/post/:id/publishdraft',controller.PublishDraft)
 router.delete('/post/:id',controller.deletePost)
-/*
-// File Operations
-router.delete("/deletefile/:id", controller.deletefilePost);
-router.delete("/deletefolder/:id", controller.deletefolderPost);
-router.put("/movefile/:id", controller.moveFilePost);
-router.patch("/editname/:id", controller.editfoldernamePost);
-router.patch("/editfilename/:id", controller.editfilename);
-router.get("/file/:id", controller.fileinfoGet);
-router.get("/download/:id", controller.downloadFileGet);
-*/
 
+//comment section
+router.post('/post/:id/comments', comentController.createComment)
+router.delete('/comments/:id',commentController.deleteComment)
+router.patch('/comments/:id',commentController.editComment)
 
 // File Operations (Clean REST Style)
 router.get("/file/:id", filecontroller.fileinfoGet);              // Get file metadata

@@ -311,6 +311,37 @@ const deletePost = async (req, res, next) => {
   }
 };
 
+const SinglePost = async (req,res,next) => {
+      try{
+        const PostId = parseInt(req.params.id,10)
+        const Post = await prisma.post.findUnique({
+          where:{id:PostId},
+          include:{
+            author:true,
+            files:true,
+            comments:{
+              include:{
+                author:true
+              },
+              orderBy:{
+                createdAt:'desc'
+              }
+            }
+          },
+          
+        })
+
+        if(!Post){
+          return res.status.json({message:"Post is missing"})
+        }
+        res.status(200).json(Post)
+      }catch(error){
+        console.error(error)
+        next(error)
+      }
+}
+
+
 const testing = async(req,res)=>{
  const user = req.user
  const params = req.params
@@ -320,10 +351,10 @@ const testing = async(req,res)=>{
  console.log(body)
  console.log(params)
  console.log(fileData)
-res.json(user && body && params && fileData)
+res.json({message:'test test'})
 
 
 }
 module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,
-                  testing,getPostContent,getallPublish
+                  testing,getPostContent,getallPublish,SinglePost
 }
