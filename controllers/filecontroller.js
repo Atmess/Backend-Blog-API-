@@ -92,6 +92,22 @@ const dashboard = async (req, res) => {
   }
 };
 
+const getUserFile = async (req,res,next) => {
+    const UserId = parseInt(req.user.userId,10)
+    try{
+      const UserFile = await prisma.file.findMany({
+        where:{userId:UserId}
+      })
+
+      res.status(200).json(UserFile)
+
+    }catch(error){
+      console.error("error getting photo user", error)
+      next(error)
+    }
+}
+
+
 // Create Folder
 const createFolderPost = async (req, res) => {
   if (!req.user) return res.redirect("/log-in");
@@ -144,11 +160,10 @@ const getFolderGet = async (req, res) => {
 
 // Delete File
 const deletefilePost = async (req, res) => {
-  if (!req.user) return res.redirect("/log-in");
 
   try {
-    const fileId = Number(req.params.id);
-    const userId = Number(req.user.id);
+    const fileId = parseInt(req.params.id,10);
+    const userId = parseInt(req.user.id,10);
 
     const file = await prisma.file.findUnique({
       where: { id: fileId },
@@ -171,10 +186,10 @@ const deletefilePost = async (req, res) => {
       where: { id: fileId },
     });
 
-    res.redirect("/");
+    res.status(200).json({message:"succes deleting file"})
   } catch (error) {
-    console.error("Delete File Error:", error);
-    res.status(500).send("Error deleting file");
+    console.error("Delete File Error:", error , file,userId);
+    res.status(500).json({message:"Error deleting file"});
   }
 };
 
@@ -348,19 +363,14 @@ const fileinfoGet = async (req, res) => {
 
 // Download File
 const downloadFileGet = async (req, res) => {
-  if (!req.user) return res.redirect("/log-in");
 
   try {
-    const fileId = Number(req.params.id);
-    const userId = Number(req.user.id);
+    const fileId = parseInt(req.params.id,10);
 
     const file = await prisma.file.findUnique({
       where: { id: fileId },
     });
 
-    if (!file || file.userId !== userId) {
-      return res.status(403).send("Unauthorized to download this file.");
-    }
 
     const fileUrl = decodeURIComponent(file.url);
     const urlPath = new URL(fileUrl).pathname;
@@ -373,7 +383,7 @@ const downloadFileGet = async (req, res) => {
 
     const response = await fetch(fileUrl);
     if (!response.ok) {
-      return res.status(404).send("File not found on remote storage.");
+      return res.status(404).json({message:"File not found on remote storage."});
     }
 
     res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
@@ -383,7 +393,7 @@ const downloadFileGet = async (req, res) => {
     Readable.fromWeb(response.body).pipe(res);
   } catch (err) {
     console.error("Download Error:", err);
-    res.status(500).send("Error downloading file");
+    res.status(500).json({message:"Error downloading file"});
   }
 };
 
@@ -477,5 +487,6 @@ module.exports = {
   downloadFileGet,
   shareLinkPost,
   shareLinkResultGet,
+  getUserFile,
   testing
 };

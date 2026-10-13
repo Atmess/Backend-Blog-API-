@@ -115,6 +115,7 @@ router.patch('/users/profile',FilterFile,filecontroller.uploadfile , controller.
 // File Operations (Clean REST Style)
 router.get("/file/:id", filecontroller.fileinfoGet);              // Get file metadata
 router.get("/download/:id", filecontroller.downloadFileGet);      // Download file stream
+router.get("/user/file", filecontroller.getUserFile)
 
 router.delete("/file/:id", filecontroller.deletefilePost);        // Delete a file (DELETE method handles the 'delete' action)
 router.delete("/folder/:id", filecontroller.deletefolderPost);    // Delete a folder
