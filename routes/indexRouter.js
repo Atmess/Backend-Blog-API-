@@ -95,10 +95,11 @@ router.use(authenticateToken)
 
 // 2. Defined as '/posts'
 router.get('/post/draft', controller.getdraft );
-router.get('/post/published',controller.getPublish)
+router.get('/post/published',controller.getUserPublish)
 
 router.post('/post/publish',FilterFile, filecontroller.uploadfile, controller.CreatePost)
 router.patch('/post/:id/publishdraft',controller.PublishDraft)
+router.put('/post/:id',FilterFile,filecontroller.uploadfile,controller.EditPost)
 router.delete('/post/:id',controller.deletePost)
 
 //comment section
@@ -108,6 +109,8 @@ router.patch('/comments/:id',commentController.editComment)
 
 //User Section
 router.patch('/users/profile',FilterFile,filecontroller.uploadfile , controller.UpdateUser)
+
+
 
 // File Operations (Clean REST Style)
 router.get("/file/:id", filecontroller.fileinfoGet);              // Get file metadata

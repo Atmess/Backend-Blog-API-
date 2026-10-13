@@ -3,7 +3,6 @@ const prisma = require("../lib/prisma.js")
 const bcrypt = require('bcryptjs')
 const jwt =require('jsonwebtoken');
 const { createClient } = require("@supabase/supabase-js");
-const { uploadfile } = require("./filecontroller.js");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY; // Ensure this matches your Render key name
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -255,7 +254,7 @@ const getdraft = async (req,res,next) => {
     }
 }
 
-const getPublish = async (req,res,next) => {
+const getUserPublish = async (req,res,next) => {
   try{    
       const draft = await prisma.post.findMany({
         where:{authorId:req.user.userId, 
@@ -274,6 +273,8 @@ const getPublish = async (req,res,next) => {
           files:true
         }
       })
+
+
       res.status(200).json(draft)
     }catch(error){
       console.error(error)
@@ -322,11 +323,11 @@ const getPostContent = async (req,res,next)=>{
   }
 }
 const deletePost = async (req, res, next) => {
-  try {
     const PostId = parseInt(req.params.id, 10);
-
     // Extract user ID safely from decoded JWT payload
     const userId = parseInt( req.user.userId, 10);
+  try {
+    
 
     const Posts = await prisma.post.findUnique({
       where: { id: PostId },
@@ -399,7 +400,55 @@ const SinglePost = async (req,res,next) => {
         next(error)
       }
 }
+const EditPost = async (req ,res,next)=>{
+  const userId = parseInt(req.user.userId,10)
+  const PostId= parseInt(req.params.id ,10)
+  const fileData = req.savedFileData
+  const {title,content,published} = req.body
 
+  try{
+      const post = await prisma.post.findUnique({
+        where:{id:PostId}
+      })
+      if(!post){
+        return res.status(404).json({message:"post not found"})
+      }
+      if(post.authorId !==userId){
+        return res.status(403).json({message:"forbiden to edit post"})
+      }
+      const result = await prisma.$transaction(async (prisma) => {
+      // 1. Create the blog post
+      const newPost = await prisma.post.update({
+        where:{id:PostId},
+        data: {
+          title,
+          content,
+          published: published === 'true' || published === true,
+          authorId: userId,
+        },
+      });
+
+      // 2. Create the file record if a file was uploaded
+      let newFile = null;
+      if (fileData) {
+        newFile = await prisma.file.create({
+          data: {
+            name: fileData.name,
+            size: fileData.size,
+            url: fileData.url,
+            userId: userId,
+            postId: newPost.id,
+          },
+        });
+      }
+
+      return { newPost, newFile };
+    });
+    res.status(200).json({post:result.newPost , file:result.newFile ,message:"success editing Post"})
+  }catch(error){
+    console.error(error);
+    next(error)}
+}
 
 const testing = async(req,res)=>{
  const user = req.user
@@ -414,6 +463,6 @@ res.json({message:'test test'})
 
 
 }
-module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getPublish,deletePost,
-                  testing,getPostContent,getallPublish,SinglePost,UpdateUser
+module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getUserPublish,deletePost,
+                  testing,getPostContent,getallPublish,SinglePost,UpdateUser,EditPost
 }
