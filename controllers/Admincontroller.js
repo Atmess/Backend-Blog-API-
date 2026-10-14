@@ -122,7 +122,8 @@ const changePostStatus = async (req, res, next) => {
   try {
     const targetPostId = parseInt(req.params.id, 10);
     const { status } = req.body; // Expecting { status: 'FLAGGED', published: false }
-
+    console.log("targetpost ID",targetPostId)
+    console.log("status",status)
     // 1. Check if the requester is an ADMIN
     if (req.user.role !== 'ADMIN') {
       return res.status(403).json({ message: "Forbidden: Admins only" });
@@ -133,12 +134,12 @@ const changePostStatus = async (req, res, next) => {
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status value provided" });
     }
-
+    console.log("validStatuses",validStatuses)
     // 3. Check if target post exists
     const targetPost = await prisma.post.findUnique({
       where: { id: targetPostId },
     });
-
+    console.log("targetPost",targetPost)
     if (!targetPost) {
       return res.status(404).json({ message: "Target post not found" });
     }
@@ -154,7 +155,7 @@ const changePostStatus = async (req, res, next) => {
       },
       select: { id: true, title: true, status: true, published: true, authorId: true }
     });
-
+    console.log("updatedPost",updatedPost)
     res.json({ 
       message: `Post successfully updated (Status: ${updatedPost.status}, Published: ${updatedPost.published})`, 
       post: updatedPost 
