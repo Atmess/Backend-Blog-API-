@@ -16,20 +16,31 @@ enum Role {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  FLAGGED
+  BANNED
+}
+enum PostSatus{
+  GOOD
+  FLAGGED
+}
+
+
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  name      String?   
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  name      String?    
   avatarUrl String?
-  username  String    @unique
-  password  String    // Required for bcrypt hashing
-  role      Role      @default(USER)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  username  String     @unique
+  password  String     
+  role      Role       @default(USER)
+  status    UserStatus @default(ACTIVE) // 👈 Uses the enum with a default
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   posts     Post[]
   comments  Comment[]
-
   folders   Folder[]
   files     File[]
 }
@@ -42,6 +53,7 @@ model Post {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  status      PostSatus @default(GOOD)
 
   author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    Int

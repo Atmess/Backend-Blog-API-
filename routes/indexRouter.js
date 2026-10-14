@@ -9,6 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET
 const multer = require('multer')
 const path = require('path');
 const commentController = require('../controllers/commentController');
+const userController = require("../controllers/Admincontroller")
 
 // Define allowed MIME types
 const ALLOWED_MIME_TYPES = [
@@ -110,6 +111,11 @@ router.patch('/comments/:id',commentController.editComment)
 //User Section
 router.patch('/users/profile',FilterFile,filecontroller.uploadfile , controller.UpdateUser)
 
+//Admin section
+router.get('/admin/users',userController.getallUser)
+router.put('/admin/promote',userController.promoteToAdmin)
+router.put('/admin/users/:id/userstatus',userController.changeUserStatus)
+router.put('/admin/post/:id/poststatus',userController.changePostStatus)
 
 
 // File Operations (Clean REST Style)

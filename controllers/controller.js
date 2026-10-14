@@ -24,6 +24,9 @@ const login = async (req , res ,next)=>{
     if(!user){
         return res.status(401).json({message: "Invalid username/email or password."})
     }
+    if (user.status === 'BANNED') {
+  return res.status(403).json({ message: "Your account has been banned." });
+    }
     // 2. Verify password with bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -450,19 +453,27 @@ const EditPost = async (req ,res,next)=>{
     next(error)}
 }
 
-const testing = async(req,res)=>{
+
+
+const testing = async(req,res,next)=>{
  const user = req.user
  const params = req.params
  const body = req.body
  const fileData = req.req?.savedFileData || req.savedFileData; // Whatever your storage middleware populates
+ 
+
+
  console.log (user)
  console.log(body)
  console.log(params)
  console.log(fileData)
 res.json({message:'test test'})
 
+ 
+
 
 }
 module.exports= { login,registerpost,PublishDraft,CreatePost,getdraft,getUserPublish,deletePost,
                   testing,getPostContent,getallPublish,SinglePost,UpdateUser,EditPost
+                  
 }
