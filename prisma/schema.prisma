@@ -28,21 +28,25 @@ enum PostSatus{
 
 
 model User {
-  id        Int        @id @default(autoincrement())
-  email     String     @unique
-  name      String?    
-  avatarUrl String?
-  username  String     @unique
-  password  String     
-  role      Role       @default(USER)
-  status    UserStatus @default(ACTIVE) // 👈 Uses the enum with a default
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id               Int          @id @default(autoincrement())
+  email            String       @unique
+  name             String?    
+  avatarUrl        String?
+  username         String       @unique
+  password         String       
+  role             Role         @default(USER)
+  status           UserStatus   @default(ACTIVE)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  posts     Post[]
-  comments  Comment[]
-  folders   Folder[]
-  files     File[]
+  posts            Post[]
+  comments         Comment[]
+  folders          Folder[]
+  files            File[]
+  
+  // 👈 Explicitly name the relation fields here
+  SentMessages     Message[]    @relation("SentMessages")
+  ReceivedMessages Message[]    @relation("ReceivedMessages")
 }
 
 model Post {
@@ -113,4 +117,16 @@ model File {
   postId      Int?
 }
 
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  isRead     Boolean  @default(false)
 
+  // 👈 Match the relation name to the User model arrays
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   Int
+
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId Int
+}

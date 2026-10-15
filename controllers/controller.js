@@ -201,7 +201,7 @@ const UpdateUser = async (req, res, next) => {
 const PublishDraft = async (req,res,next) => {
   const userId = parseInt(req.user.userId,10)
   const postId = parseInt(req.params.id ,10)
-const { title, content, publishTime } = req.body || {};
+  const { title, content, publishTime } = req.body || {};
   const existingPost = await prisma.post.findUnique({
     where:{id:postId}
   })
@@ -211,6 +211,10 @@ const { title, content, publishTime } = req.body || {};
   if(existingPost.authorId !== userId){
       return res.status(403).json({ message: 'Forbidden: You do not own this post.' });
     }
+
+  if(existingPost.status === "FLAGGED"){
+    return res.status(403).json({message: "This post has been flagged by administrators and cannot be published. Please ask ADMIN to remove Flagged first"})
+  }
   try{
   const shcedule = Boolean(publishTime)
   const publishnow = !shcedule
@@ -408,6 +412,7 @@ const EditPost = async (req ,res,next)=>{
   const PostId= parseInt(req.params.id ,10)
   const fileData = req.savedFileData
   const {title,content,published} = req.body
+  const publish = published === 'true' || published === true
 
   try{
       const post = await prisma.post.findUnique({
@@ -426,7 +431,8 @@ const EditPost = async (req ,res,next)=>{
         data: {
           title,
           content,
-          published: published === 'true' || published === true,
+          published: publish,
+          publishedAt: publish ? post.publishedAt : null,
           authorId: userId,
         },
       });

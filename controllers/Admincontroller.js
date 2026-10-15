@@ -33,6 +33,45 @@ try{
 }
 }
 
+const getallPost = async (req,res,next) => {
+    const userId = parseInt(req.user.userId,10)
+try{
+  const user = await prisma.user.findUnique({
+    where:{id:userId}
+  })
+  if(user.role !== "ADMIN"){
+    return res.status(403).json({message:"ADMIN only"})
+  }
+  const posts = await prisma.post.findMany({
+  // You don't need select for scalar fields; they are included automatically!
+  include: {
+    author: {
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        avatarUrl: true,
+        role: true,
+        status: true,
+        // password is safely left out here!
+      }
+    },
+    files: true,   // Fetches attached files if needed
+    comments: true // Fetches comments if needed
+  },
+  orderBy: {
+    createdAt: 'desc',
+  },
+});
+    res.status(200).json(posts)
+  
+}catch(error){
+  console.error(error)
+  next(error)
+}
+}
+
+
 const changeUserStatus = async (req, res, next) => {
   try {
     const adminUserId = parseInt(req.user.userId, 10);
@@ -167,4 +206,6 @@ const changePostStatus = async (req, res, next) => {
   }
 };
 
-module.exports = ({getallUser,changeUserStatus,promoteToAdmin,changePostStatus})
+module.exports = ({getallUser,changeUserStatus,promoteToAdmin,changePostStatus,
+                    getallPost
+})

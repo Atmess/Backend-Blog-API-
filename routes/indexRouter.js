@@ -100,6 +100,7 @@ router.get('/post/published',controller.getUserPublish)
 
 router.post('/post/publish',FilterFile, filecontroller.uploadfile, controller.CreatePost)
 router.patch('/post/:id/publishdraft',controller.PublishDraft)
+
 router.put('/post/:id',FilterFile,filecontroller.uploadfile,controller.EditPost)
 router.delete('/post/:id',controller.deletePost)
 
@@ -113,9 +114,10 @@ router.patch('/users/profile',FilterFile,filecontroller.uploadfile , controller.
 
 //Admin section
 router.get('/admin/users',userController.getallUser)
+router.get('/admin/posts',userController.getallPost)
 router.put('/admin/promote',userController.promoteToAdmin)
 router.put('/admin/users/:id/userstatus',userController.changeUserStatus)
-router.put('/admin/post/:id/poststatus',userController.changePostStatus)
+router.put('/admin/posts/:id/poststatus',userController.changePostStatus)
 
 
 // File Operations (Clean REST Style)
