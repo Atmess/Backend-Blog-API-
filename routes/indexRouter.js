@@ -10,6 +10,7 @@ const multer = require('multer')
 const path = require('path');
 const commentController = require('../controllers/commentController');
 const userController = require("../controllers/Admincontroller")
+const messageController = require('../controllers/messageController')
 
 // Define allowed MIME types
 const ALLOWED_MIME_TYPES = [
@@ -118,6 +119,13 @@ router.get('/admin/posts',userController.getallPost)
 router.put('/admin/promote',userController.promoteToAdmin)
 router.put('/admin/users/:id/userstatus',userController.changeUserStatus)
 router.put('/admin/posts/:id/poststatus',userController.changePostStatus)
+
+//Message section 
+router.get('/messages/contacts',messageController.GetallMessage)
+router.get('/messages/all-users', messageController.getallforUser)
+router.get('/messages/contacts', messageController.getConversations);
+router.get('/messages/:userId', messageController.getMessagesWithUser);
+router.post('/messages/send', messageController.sendMessage);
 
 
 // File Operations (Clean REST Style)
